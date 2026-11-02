@@ -1,0 +1,52 @@
+[
+  {
+    "id": "M01",
+    "name": "Motor Starter",
+    "category": "Motor",
+    "monthlyPrice": 5000,
+    "benefits": ["Incident helpline", "Document guidance", "Standard support"]
+  },
+  {
+    "id": "M02",
+    "name": "Motor Plus",
+    "category": "Motor",
+    "monthlyPrice": 8000,
+    "benefits": ["Incident helpline", "Repair guidance", "Priority support"]
+  },
+  {
+    "id": "H01",
+    "name": "Health Starter",
+    "category": "Health",
+    "monthlyPrice": 6000,
+    "benefits": [
+      "Wellness guidance",
+      "Appointment assistance",
+      "Standard support"
+    ]
+  },
+  {
+    "id": "H02",
+    "name": "Health Plus",
+    "category": "Health",
+    "monthlyPrice": 10000,
+    "benefits": [
+      "Wellness guidance",
+      "Appointment assistance",
+      "Priority support"
+    ]
+  },
+  {
+    "id": "T01",
+    "name": "Travel Starter",
+    "category": "Travel",
+    "monthlyPrice": 3000,
+    "benefits": ["Travel helpline", "Document guidance", "Standard support"]
+  },
+  {
+    "id": "T02",
+    "name": "Travel Plus",
+    "category": "Travel",
+    "monthlyPrice": 4500,
+    "benefits": ["Travel helpline", "Document assistance", "Priority support"]
+  }
+]
