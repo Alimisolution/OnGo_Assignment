@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import {type Plan, PlanCard } from './PlanCard';
+import React, { useState, useEffect, useRef } from 'react';
+import { type Plan, PlanCard } from './PlanCard';
 import { ComparisonPanel } from './ComparisonPanel';
 
 interface PlanCatalogueProps {
@@ -14,13 +14,37 @@ export const PlanCatalogue: React.FC<PlanCatalogueProps> = ({
   plans, comparedPlanIds, onAddToCompare, onRemoveFromCompare, onSelectPlan 
 }) => {
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState(''); // The debounced value
   const [category, setCategory] = useState('All');
   const [sort, setSort] = useState('lowToHigh');
+  
+  // useRef holds the timer ID. It persists across renders without causing re-renders.
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Filter and sort logic
+  // useEffect handles the 400ms debounce logic
+  useEffect(() => {
+    // 1. Clear any existing timer if the user types again
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // 2. Set a new timer to update appliedSearch after 400ms of inactivity
+    searchTimeoutRef.current = setTimeout(() => {
+      setAppliedSearch(search);
+    }, 400);
+
+    // 3. Cleanup function: runs when the component unmounts or before the effect runs again
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [search]); // Only re-run this effect when 'search' changes
+
+  // Filter using appliedSearch (the debounced value)
   const filteredPlans = plans
     .filter(plan => {
-      const matchesSearch = plan.name.toLowerCase().includes(search.toLowerCase().trim());
+      const matchesSearch = plan.name.toLowerCase().includes(appliedSearch.toLowerCase().trim());
       const matchesCategory = category === 'All' || plan.category === category;
       return matchesSearch && matchesCategory;
     })
@@ -29,6 +53,18 @@ export const PlanCatalogue: React.FC<PlanCatalogueProps> = ({
     });
 
   const comparedPlans = plans.filter(p => comparedPlanIds.includes(p.id));
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setAppliedSearch(''); // Immediately clear the applied search
+    setCategory('All');
+    setSort('lowToHigh');
+    
+    // Clear the timeout to prevent any pending search from applying after clearing
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -76,10 +112,10 @@ export const PlanCatalogue: React.FC<PlanCatalogueProps> = ({
       {/* Plan Grid */}
       {filteredPlans.length === 0 ? (
         <div className="text-center py-10 text-gray-500">
-          <p className="text-lg font-semibold">No plans match your search</p>
+          <p className="text-lg font-semibold mb-2">No plans match your search</p>
           <button 
-            onClick={() => { setSearch(''); setCategory('All'); setSort('lowToHigh'); }}
-            className="mt-2 text-blue-600 hover:underline"
+            onClick={handleClearFilters}
+            className="text-blue-600 hover:underline font-medium"
           >
             Clear filters
           </button>
