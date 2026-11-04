@@ -2,22 +2,33 @@ import { useState } from 'react';
 import plansData from './data/plans.json';
 import { PlanCatalogue } from './components/PlanCatalogue';
 import { type Plan } from './components/PlanCard';
+import { CoverStep } from './components/CoverStep';
 
 const plans: Plan[] = plansData as Plan[];
 
+type Step = 'browse' | 'cover' | 'details' | 'review';
+
 function App() {
+  // Catalogue State
   const [comparedPlanIds, setComparedPlanIds] = useState<string[]>([]);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
 
+  // Quote State
+  const [currentStep, setCurrentStep] = useState<Step>('browse');
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [addonIds, setAddonIds] = useState<string[]>([]);
+
+  // Derived: Get the actual plan object from the ID
+  const selectedPlan = plans.find(p => p.id === selectedPlanId) || null;
+
+  // Catalogue Handlers
   const handleAddToCompare = (id: string) => {
-    // Enforce the 3-plan limit
     if (comparedPlanIds.length >= 3 && !comparedPlanIds.includes(id)) {
       setShowLimitWarning(true);
-      // Auto-hide the warning after 3 seconds
       setTimeout(() => setShowLimitWarning(false), 3000);
       return;
     }
-    
     if (!comparedPlanIds.includes(id)) {
       setComparedPlanIds([...comparedPlanIds, id]);
     }
@@ -27,8 +38,40 @@ function App() {
     setComparedPlanIds(comparedPlanIds.filter(planId => planId !== id));
   };
 
+  // Quote Handlers
   const handleSelectPlan = (id: string) => {
-    alert(`You chose plan: ${id}. We will build the Quote steps next!`);
+    setSelectedPlanId(id);
+    setCurrentStep('cover');
+  };
+
+  const handleChangePlan = () => {
+    setCurrentStep('browse');
+  };
+
+  const handleUpdateQuantity = (newQty: number) => {
+    // Enforce 1 to 5 limit strictly
+    if (newQty >= 1 && newQty <= 5) {
+      setQuantity(newQty);
+    }
+  };
+
+  const handleToggleAddon = (addonId: string) => {
+    if (addonIds.includes(addonId)) {
+      setAddonIds(addonIds.filter(id => id !== addonId));
+    } else {
+      setAddonIds([...addonIds, addonId]);
+    }
+  };
+
+  const handleResetCover = () => {
+    setQuantity(1);
+    setAddonIds([]);
+  };
+
+  const handleContinueToDetails = () => {
+    // For now, we'll just alert. We will build the Details step next!
+    alert("Moving to Customer Details step (coming in Milestone 3)!");
+    // setCurrentStep('details'); // Uncomment this in the next milestone
   };
 
   return (
@@ -41,7 +84,6 @@ function App() {
       </header>
 
       <main className="py-8">
-        {/* Limit Warning Banner */}
         {showLimitWarning && (
           <div className="max-w-6xl mx-auto px-4 mb-4">
             <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded shadow-sm" role="alert">
@@ -51,13 +93,28 @@ function App() {
           </div>
         )}
 
-        <PlanCatalogue 
-          plans={plans}
-          comparedPlanIds={comparedPlanIds}
-          onAddToCompare={handleAddToCompare}
-          onRemoveFromCompare={handleRemoveFromCompare}
-          onSelectPlan={handleSelectPlan}
-        />
+        {currentStep === 'browse' && (
+          <PlanCatalogue 
+            plans={plans}
+            comparedPlanIds={comparedPlanIds}
+            onAddToCompare={handleAddToCompare}
+            onRemoveFromCompare={handleRemoveFromCompare}
+            onSelectPlan={handleSelectPlan}
+          />
+        )}
+
+        {currentStep === 'cover' && selectedPlan && (
+          <CoverStep
+            selectedPlan={selectedPlan}
+            quantity={quantity}
+            addonIds={addonIds}
+            onChangePlan={handleChangePlan}
+            onUpdateQuantity={handleUpdateQuantity}
+            onToggleAddon={handleToggleAddon}
+            onResetCover={handleResetCover}
+            onContinue={handleContinueToDetails}
+          />
+        )}
       </main>
     </div>
   );
