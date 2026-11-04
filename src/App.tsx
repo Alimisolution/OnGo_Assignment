@@ -1,31 +1,52 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { PlanCatalogue } from './components/PlanCatalogue';
-import {type Plan } from './components/PlanCard';
+import { type Plan } from './components/PlanCard';
 import { CoverStep } from './components/CoverStep';
 import { CustomerDetailsStep } from './components/CustomerDetailsStep';
 import { ReviewStep } from './components/ReviewStep';
+import { SuccessScreen } from './components/SuccessScreen';
 import { addons } from './data/addons';
 import plansData from './data/plans.json';
-import { loadDraft, saveDraft, clearDraft,type Draft } from './utils/draft';
+import { loadDraft, saveDraft, clearDraft, type Draft } from './utils/draft';
+import { simulateSubmission, resetAttemptCount } from './utils/submission';
 
 const plans: Plan[] = plansData as Plan[];
 
+type Step = 'browse' | 'cover' | 'details' | 'review' | 'success';
+
+interface Customer {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+// Submission Failed
+
+// We could not send your request. Please try again.
+
 function App() {
-  // 1. Load initial draft ONCE on mount
+  // Load initial draft ONCE on mount
   const initialLoad = useMemo(() => loadDraft(), []);
   const [storageWarning, setStorageWarning] = useState(initialLoad.warning);
 
-  // 2. Initialize state from the validated draft
+  // Initialize state from the validated draft
   const [comparedPlanIds, setComparedPlanIds] = useState<string[]>(initialLoad.draft.comparedPlanIds);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
   
-  const [currentStep, setCurrentStep] = useState<Draft['step']>(initialLoad.draft.step);
+  const [currentStep, setCurrentStep] = useState<Step>(initialLoad.draft.step);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(initialLoad.draft.selectedPlanId);
   const [quantity, setQuantity] = useState(initialLoad.draft.quantity);
   const [addonIds, setAddonIds] = useState<string[]>(initialLoad.draft.addonIds);
   const [customer, setCustomer] = useState(initialLoad.draft.customer);
 
-  // Key to force PlanCatalogue to remount and reset its internal search/sort state
+  // Submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [successReference, setSuccessReference] = useState<string | null>(null);
+  
+  // Ref to prevent double-clicks
+  const isSubmittingRef = useRef(false);
+
   const [catalogueKey, setCatalogueKey] = useState(0);
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId) || null;
@@ -38,20 +59,21 @@ function App() {
     return unitSubtotal * quantity;
   }, [selectedPlan, addonIds, quantity]);
 
-  // 3. Auto-save effect: runs whenever any draft-related state changes
+  // Auto-save effect (only when not in success state)
   useEffect(() => {
+    if (currentStep === 'success') return; // Don't save after success
+
     const draftToSave: Draft = {
       version: 1, comparedPlanIds, selectedPlanId, quantity, addonIds, customer, step: currentStep,
     };
     
-    // Check if it's the default empty state
     const isDefault = 
       comparedPlanIds.length === 0 && selectedPlanId === null && quantity === 1 &&
       addonIds.length === 0 && customer.name === '' && customer.email === '' && customer.phone === '' &&
       currentStep === 'browse';
 
     if (isDefault) {
-      clearDraft(); // Keep the key absent until meaningful progress is made
+      clearDraft();
       return;
     }
 
@@ -90,20 +112,49 @@ function App() {
   const handleContinueToReview = () => setCurrentStep('review');
   const handleEditDetails = () => setCurrentStep('details');
 
-  const handleSubmitQuote = () => {
-    alert('Quote submitted! (Submission logic coming in Milestone 5)');
+  const handleSubmitQuote = async () => {
+    // Guard against double-clicks
+    if (isSubmittingRef.current) return;
+    
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    setSubmissionError(null);
+
+    try {
+      const result = await simulateSubmission();
+      
+      if (result.success && result.reference) {
+        setSuccessReference(result.reference);
+        clearDraft(); // Clear the draft on success
+        setCurrentStep('success');
+      } else {
+        setSubmissionError(result.error || 'An unknown error occurred.');
+      }
+    } catch (error) {
+      setSubmissionError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+      isSubmittingRef.current = false;
+    }
+  };
+
+  const handleStartNewQuote = () => {
+    setComparedPlanIds([]);
+    setSelectedPlanId(null);
+    setQuantity(1);
+    setAddonIds([]);
+    setCustomer({ name: '', email: '', phone: '' });
+    setCurrentStep('browse');
+    setSuccessReference(null);
+    setSubmissionError(null);
+    setCatalogueKey(prev => prev + 1);
+    clearDraft();
+    resetAttemptCount(); // Reset for next submission cycle
   };
 
   const handleStartOver = () => {
     if (window.confirm('Are you sure you want to start over? This will clear all your selections and saved progress.')) {
-      setComparedPlanIds([]);
-      setSelectedPlanId(null);
-      setQuantity(1);
-      setAddonIds([]);
-      setCustomer({ name: '', email: '', phone: '' });
-      setCurrentStep('browse');
-      setCatalogueKey(prev => prev + 1); // Force remount of PlanCatalogue to reset search/sort
-      clearDraft();
+      handleStartNewQuote();
     }
   };
 
@@ -115,12 +166,15 @@ function App() {
             <img src="/Picture1.png" alt="OnGo Logo" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-gray-800">OnGo Insurance</h1>
           </div>
-          <button
-            onClick={handleStartOver}
-            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-600 rounded hover:bg-red-50 transition"
-          >
-            Start over
-          </button>
+          {currentStep !== 'success' && (
+            <button
+              onClick={handleStartOver}
+              disabled={isSubmitting}
+              className="px-4 py-2 text-sm font-medium text-red-600 border border-red-600 rounded hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Start over
+            </button>
+          )}
         </div>
       </header>
 
@@ -147,7 +201,7 @@ function App() {
         {/* Steps */}
         {currentStep === 'browse' && (
           <PlanCatalogue 
-            key={catalogueKey} // This forces a reset of internal search/sort state
+            key={catalogueKey}
             plans={plans}
             comparedPlanIds={comparedPlanIds}
             onAddToCompare={handleAddToCompare}
@@ -188,6 +242,19 @@ function App() {
             onEditCover={handleChangePlan}
             onEditDetails={handleEditDetails}
             onSubmit={handleSubmitQuote}
+            isSubmitting={isSubmitting}
+            submissionError={submissionError}
+          />
+        )}
+
+        {currentStep === 'success' && selectedPlan && successReference && (
+          <SuccessScreen
+            reference={successReference}
+            selectedPlan={selectedPlan}
+            quantity={quantity}
+            monthlyTotal={monthlyTotal}
+            customerName={customer.name}
+            onStartNewQuote={handleStartNewQuote}
           />
         )}
       </main>

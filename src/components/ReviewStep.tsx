@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { type Plan } from './PlanCard';
+import {type Plan } from './PlanCard';
 import { addons } from '../data/addons';
 
 interface Customer {
@@ -17,6 +17,8 @@ interface ReviewStepProps {
   onEditCover: () => void;
   onEditDetails: () => void;
   onSubmit: () => void;
+  isSubmitting: boolean;
+  submissionError: string | null;
 }
 
 export const ReviewStep: React.FC<ReviewStepProps> = ({
@@ -28,11 +30,11 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
   onEditCover,
   onEditDetails,
   onSubmit,
+  isSubmitting,
+  submissionError,
 }) => {
-  // useRef to target the heading element for scrolling
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  // useEffect runs once when the component mounts to scroll to the top
   useEffect(() => {
     headingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
@@ -46,13 +48,22 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
         Review Your Quote
       </h2>
 
+      {/* Error Message */}
+      {submissionError && (
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded mb-6" role="alert">
+          <p className="font-bold">Submission Failed</p>
+          <p className="text-sm">{submissionError}</p>
+        </div>
+      )}
+
       {/* Cover Summary */}
       <div className="bg-white border rounded-lg p-5 mb-6">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-lg font-bold text-gray-800">Cover Details</h3>
           <button
             onClick={onEditCover}
-            className="text-blue-600 hover:underline text-sm font-medium"
+            disabled={isSubmitting}
+            className="text-blue-600 hover:underline text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Edit cover
           </button>
@@ -74,7 +85,8 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
           <h3 className="text-lg font-bold text-gray-800">Customer Details</h3>
           <button
             onClick={onEditDetails}
-            className="text-blue-600 hover:underline text-sm font-medium"
+            disabled={isSubmitting}
+            className="text-blue-600 hover:underline text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Edit details
           </button>
@@ -90,9 +102,10 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
       <div className="flex flex-col sm:flex-row gap-3 justify-end">
         <button
           onClick={onSubmit}
-          className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 font-bold text-lg"
+          disabled={isSubmitting}
+          className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Submit quote request
+          {isSubmitting ? 'Sending your quote request...' : (submissionError ? 'Retry submission' : 'Submit quote request')}
         </button>
       </div>
     </div>
