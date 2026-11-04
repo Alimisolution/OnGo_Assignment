@@ -1,12 +1,21 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import plansData from './data/plans.json';
 import { PlanCatalogue } from './components/PlanCatalogue';
-import { type Plan } from './components/PlanCard';
+import {type Plan } from './components/PlanCard';
 import { CoverStep } from './components/CoverStep';
+import { CustomerDetailsStep } from './components/CustomerDetailsStep';
+import { ReviewStep } from './components/ReviewStep';
+import { addons } from './data/addons';
 
 const plans: Plan[] = plansData as Plan[];
 
 type Step = 'browse' | 'cover' | 'details' | 'review';
+
+interface Customer {
+  name: string;
+  email: string;
+  phone: string;
+}
 
 function App() {
   // Catalogue State
@@ -18,9 +27,25 @@ function App() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [addonIds, setAddonIds] = useState<string[]>([]);
+  
+  // Customer State
+  const [customer, setCustomer] = useState<Customer>({
+    name: '',
+    email: '',
+    phone: '',
+  });
 
   // Derived: Get the actual plan object from the ID
   const selectedPlan = plans.find(p => p.id === selectedPlanId) || null;
+
+  // Derived: Calculate monthly total using useMemo for performance
+  const monthlyTotal = useMemo(() => {
+    if (!selectedPlan) return 0;
+    const selectedAddons = addons.filter(a => addonIds.includes(a.id));
+    const addonsTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
+    const unitSubtotal = selectedPlan.monthlyPrice + addonsTotal;
+    return unitSubtotal * quantity;
+  }, [selectedPlan, addonIds, quantity]);
 
   // Catalogue Handlers
   const handleAddToCompare = (id: string) => {
@@ -38,21 +63,15 @@ function App() {
     setComparedPlanIds(comparedPlanIds.filter(planId => planId !== id));
   };
 
-  // Quote Handlers
+  // Quote Navigation Handlers
   const handleSelectPlan = (id: string) => {
     setSelectedPlanId(id);
     setCurrentStep('cover');
   };
 
-  const handleChangePlan = () => {
-    setCurrentStep('browse');
-  };
-
+  const handleChangePlan = () => setCurrentStep('browse');
   const handleUpdateQuantity = (newQty: number) => {
-    // Enforce 1 to 5 limit strictly
-    if (newQty >= 1 && newQty <= 5) {
-      setQuantity(newQty);
-    }
+    if (newQty >= 1 && newQty <= 5) setQuantity(newQty);
   };
 
   const handleToggleAddon = (addonId: string) => {
@@ -68,10 +87,14 @@ function App() {
     setAddonIds([]);
   };
 
-  const handleContinueToDetails = () => {
-    // For now, we'll just alert. We will build the Details step next!
-    alert("Moving to Customer Details step (coming in Milestone 3)!");
-    // setCurrentStep('details'); // Uncomment this in the next milestone
+  const handleContinueToDetails = () => setCurrentStep('details');
+  const handleBackToCover = () => setCurrentStep('cover');
+  const handleContinueToReview = () => setCurrentStep('review');
+  const handleEditDetails = () => setCurrentStep('details');
+
+  const handleSubmitQuote = () => {
+    // We will build the actual submission logic in Milestone 5!
+    alert('Quote submitted! (Submission logic coming in Milestone 5)');
   };
 
   return (
@@ -113,6 +136,28 @@ function App() {
             onToggleAddon={handleToggleAddon}
             onResetCover={handleResetCover}
             onContinue={handleContinueToDetails}
+          />
+        )}
+
+        {currentStep === 'details' && (
+          <CustomerDetailsStep
+            customer={customer}
+            onUpdateCustomer={setCustomer}
+            onBack={handleBackToCover}
+            onContinue={handleContinueToReview}
+          />
+        )}
+
+        {currentStep === 'review' && selectedPlan && (
+          <ReviewStep
+            selectedPlan={selectedPlan}
+            quantity={quantity}
+            addonIds={addonIds}
+            customer={customer}
+            monthlyTotal={monthlyTotal}
+            onEditCover={handleChangePlan}
+            onEditDetails={handleEditDetails}
+            onSubmit={handleSubmitQuote}
           />
         )}
       </main>
