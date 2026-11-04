@@ -14,15 +14,6 @@ const plans: Plan[] = plansData as Plan[];
 
 type Step = 'browse' | 'cover' | 'details' | 'review' | 'success';
 
-interface Customer {
-  name: string;
-  email: string;
-  phone: string;
-}
-
-// Submission Failed
-
-// We could not send your request. Please try again.
 
 function App() {
   // Load initial draft ONCE on mount
