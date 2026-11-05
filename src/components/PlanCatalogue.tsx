@@ -19,7 +19,7 @@ export const PlanCatalogue: React.FC<PlanCatalogueProps> = ({
   const [sort, setSort] = useState('lowToHigh');
   
   // useRef holds the timer ID. It persists across renders without causing re-renders.
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // useEffect handles the 400ms debounce logic
   useEffect(() => {
