@@ -1,5 +1,6 @@
 import React from 'react';
-import {type Plan } from './PlanCard';
+import { X, CheckCircle } from 'lucide-react';
+import { type Plan } from './PlanCard';
 
 interface ComparisonPanelProps {
   comparedPlans: Plan[];
@@ -10,37 +11,49 @@ interface ComparisonPanelProps {
 export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ comparedPlans, onRemoveFromCompare, onSelectPlan }) => {
   if (comparedPlans.length === 0) {
     return (
-      <div className="bg-gray-50 border rounded-lg p-4 text-center text-gray-500">
-        <p>No plans selected for comparison.</p>
-        <p className="text-sm mt-1">Add up to 3 plans to compare their benefits.</p>
+      <div className="bg-ongo-navy-light/50 border-2 border-dashed border-ongo-navy/20 rounded-lg p-6 text-center">
+        <p className="text-ongo-navy font-semibold mb-1">No plans selected for comparison</p>
+        <p className="text-sm text-gray-600">Add up to 3 plans to compare their benefits side by side</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-      <h3 className="font-bold text-lg mb-3 text-blue-800">
-        Comparison ({comparedPlans.length} of 3 selected)
-      </h3>
+    <div className="bg-ongo-navy border border-ongo-yellow/30 rounded-lg p-6 mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-lg text-white flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-ongo-yellow" />
+          Comparison ({comparedPlans.length} of 3 selected)
+        </h3>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {comparedPlans.map(plan => (
-          <div key={plan.id} className="bg-white p-3 rounded border border-blue-100">
-            <h4 className="font-bold">{plan.name}</h4>
-            <p className="text-sm text-gray-600 mb-2">NGN {plan.monthlyPrice.toLocaleString()} / month</p>
-            <div className="flex gap-2 mt-2">
+          <div key={plan.id} className="bg-white p-4 rounded border border-gray-200">
+            <div className="flex items-start justify-between mb-2">
+              <h4 className="font-bold text-ongo-navy">{plan.name}</h4>
               <button 
                 onClick={() => onRemoveFromCompare(plan.id)}
-                className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200"
+                className="text-red-500 hover:text-red-700 transition"
+                aria-label={`Remove ${plan.name} from comparison`}
               >
-                Remove
-              </button>
-              <button 
-                onClick={() => onSelectPlan(plan.id)}
-                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-              >
-                Choose
+                <X className="w-4 h-4" />
               </button>
             </div>
+            <p className="text-sm text-gray-600 mb-3">NGN {plan.monthlyPrice.toLocaleString()} / month</p>
+            <ul className="space-y-1 mb-3">
+              {plan.benefits.map((benefit, idx) => (
+                <li key={idx} className="text-xs text-gray-700 flex items-start gap-1">
+                  <CheckCircle className="w-3 h-3 text-ongo-yellow flex-shrink-0 mt-0.5" />
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+            <button 
+              onClick={() => onSelectPlan(plan.id)}
+              className="w-full text-xs bg-ongo-yellow text-ongo-navy px-3 py-2 rounded font-semibold hover:bg-ongo-yellow-light transition"
+            >
+              Choose Plan
+            </button>
           </div>
         ))}
       </div>

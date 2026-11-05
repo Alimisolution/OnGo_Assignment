@@ -1,6 +1,25 @@
 @import "tailwindcss";
 
+/* Official OnGo Brand Colors mapped to existing component classes */
+@theme {
+  --color-ongo-navy: #012060;
+  --color-ongo-navy-light: #0a1f44;
+  --color-ongo-navy-dark: #012060;
+  --color-ongo-yellow: #ffbe00;
+  --color-ongo-yellow-light: #ffbe00; 
+  --color-ongo-blue-accent: #4da3ff;
+  --color-ongo-blue: #1e66ff;
+  --color-ongo-white: #ffffff;
+  --color-ongo-off-white: #f;
+  --color-ongo-muted: #8898bb;
+}
+
 body {
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-ongo-off-white); /* Sets the nice off-white background */
 }

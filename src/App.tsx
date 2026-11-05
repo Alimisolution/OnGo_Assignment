@@ -5,6 +5,8 @@ import { CoverStep } from './components/CoverStep';
 import { CustomerDetailsStep } from './components/CustomerDetailsStep';
 import { ReviewStep } from './components/ReviewStep';
 import { SuccessScreen } from './components/SuccessScreen';
+import { HeroSection } from './components/HeroSection';
+import { Footer } from './components/Footer';
 import { addons } from './data/addons';
 import plansData from './data/plans.json';
 import { loadDraft, saveDraft, clearDraft, type Draft } from './utils/draft';
@@ -14,13 +16,10 @@ const plans: Plan[] = plansData as Plan[];
 
 type Step = 'browse' | 'cover' | 'details' | 'review' | 'success';
 
-
 function App() {
-  // Load initial draft ONCE on mount
   const initialLoad = useMemo(() => loadDraft(), []);
   const [storageWarning, setStorageWarning] = useState(initialLoad.warning);
 
-  // Initialize state from the validated draft
   const [comparedPlanIds, setComparedPlanIds] = useState<string[]>(initialLoad.draft.comparedPlanIds);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
   
@@ -30,14 +29,11 @@ function App() {
   const [addonIds, setAddonIds] = useState<string[]>(initialLoad.draft.addonIds);
   const [customer, setCustomer] = useState(initialLoad.draft.customer);
 
-  // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [successReference, setSuccessReference] = useState<string | null>(null);
   
-  // Ref to prevent double-clicks
   const isSubmittingRef = useRef(false);
-
   const [catalogueKey, setCatalogueKey] = useState(0);
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId) || null;
@@ -50,9 +46,8 @@ function App() {
     return unitSubtotal * quantity;
   }, [selectedPlan, addonIds, quantity]);
 
-  // Auto-save effect (only when not in success state)
   useEffect(() => {
-    if (currentStep === 'success') return; // Don't save after success
+    if (currentStep === 'success') return;
 
     const draftToSave: Draft = {
       version: 1, comparedPlanIds, selectedPlanId, quantity, addonIds, customer, step: currentStep,
@@ -78,7 +73,6 @@ function App() {
     }
   }, [comparedPlanIds, selectedPlanId, quantity, addonIds, customer, currentStep]);
 
-  // --- Handlers ---
   const handleAddToCompare = (id: string) => {
     if (comparedPlanIds.length >= 3 && !comparedPlanIds.includes(id)) {
       setShowLimitWarning(true);
@@ -104,7 +98,6 @@ function App() {
   const handleEditDetails = () => setCurrentStep('details');
 
   const handleSubmitQuote = async () => {
-    // Guard against double-clicks
     if (isSubmittingRef.current) return;
     
     isSubmittingRef.current = true;
@@ -116,7 +109,7 @@ function App() {
       
       if (result.success && result.reference) {
         setSuccessReference(result.reference);
-        clearDraft(); // Clear the draft on success
+        clearDraft();
         setCurrentStep('success');
       } else {
         setSubmissionError(result.error || 'An unknown error occurred.');
@@ -140,7 +133,7 @@ function App() {
     setSubmissionError(null);
     setCatalogueKey(prev => prev + 1);
     clearDraft();
-    resetAttemptCount(); // Reset for next submission cycle
+    resetAttemptCount();
   };
 
   const handleStartOver = () => {
@@ -150,17 +143,18 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="shadow-lg border-b border-white/10">
         <div className="max-w-6xl mx-auto p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/Picture1.png" alt="OnGo Logo" className="h-14 w-auto" />
+            <img src="/Picture1.png" alt="OnGo Logo" className="h-16 w-auto" />
           </div>
           {currentStep !== 'success' && (
             <button
               onClick={handleStartOver}
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-medium text-red-600 border border-red-600 rounded hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-ongo-navy border border-ongo-navy rounded hover:bg-white/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Start over
             </button>
@@ -168,10 +162,11 @@ function App() {
         </div>
       </header>
 
-      <main className="py-8">
+      {/* Main Content */}
+      <main className="flex-grow">
         {/* Warnings */}
         {storageWarning && (
-          <div className="max-w-6xl mx-auto px-4 mb-4">
+          <div className="max-w-6xl mx-auto px-4 pt-4">
             <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-4 rounded shadow-sm" role="alert">
               <p className="font-bold">Storage Warning</p>
               <p className="text-sm">{storageWarning}</p>
@@ -180,7 +175,7 @@ function App() {
         )}
 
         {showLimitWarning && (
-          <div className="max-w-6xl mx-auto px-4 mb-4">
+          <div className="max-w-6xl mx-auto px-4 pt-4">
             <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded shadow-sm" role="alert">
               <p className="font-bold">Comparison Limit Reached</p>
               <p className="text-sm">You can only compare up to 3 plans at a time.</p>
@@ -190,64 +185,83 @@ function App() {
 
         {/* Steps */}
         {currentStep === 'browse' && (
-          <PlanCatalogue 
-            key={catalogueKey}
-            plans={plans}
-            comparedPlanIds={comparedPlanIds}
-            onAddToCompare={handleAddToCompare}
-            onRemoveFromCompare={handleRemoveFromCompare}
-            onSelectPlan={handleSelectPlan}
-          />
+          <>
+            <HeroSection />
+            <div className="bg-gray-50 py-12">
+              <div className="max-w-6xl mx-auto px-4">
+                <h2 className="text-3xl font-bold text-ongo-navy mb-8 text-center">Choose Your Plan</h2>
+                <PlanCatalogue 
+                  key={catalogueKey}
+                  plans={plans}
+                  comparedPlanIds={comparedPlanIds}
+                  onAddToCompare={handleAddToCompare}
+                  onRemoveFromCompare={handleRemoveFromCompare}
+                  onSelectPlan={handleSelectPlan}
+                />
+              </div>
+            </div>
+          </>
         )}
 
         {currentStep === 'cover' && selectedPlan && (
-          <CoverStep
-            selectedPlan={selectedPlan}
-            quantity={quantity}
-            addonIds={addonIds}
-            onChangePlan={handleChangePlan}
-            onUpdateQuantity={handleUpdateQuantity}
-            onToggleAddon={handleToggleAddon}
-            onResetCover={handleResetCover}
-            onContinue={handleContinueToDetails}
-          />
+          <div className="py-12">
+            <CoverStep
+              selectedPlan={selectedPlan}
+              quantity={quantity}
+              addonIds={addonIds}
+              onChangePlan={handleChangePlan}
+              onUpdateQuantity={handleUpdateQuantity}
+              onToggleAddon={handleToggleAddon}
+              onResetCover={handleResetCover}
+              onContinue={handleContinueToDetails}
+            />
+          </div>
         )}
 
         {currentStep === 'details' && (
-          <CustomerDetailsStep
-            customer={customer}
-            onUpdateCustomer={setCustomer}
-            onBack={handleBackToCover}
-            onContinue={handleContinueToReview}
-          />
+          <div className="py-12">
+            <CustomerDetailsStep
+              customer={customer}
+              onUpdateCustomer={setCustomer}
+              onBack={handleBackToCover}
+              onContinue={handleContinueToReview}
+            />
+          </div>
         )}
 
         {currentStep === 'review' && selectedPlan && (
-          <ReviewStep
-            selectedPlan={selectedPlan}
-            quantity={quantity}
-            addonIds={addonIds}
-            customer={customer}
-            monthlyTotal={monthlyTotal}
-            onEditCover={handleChangePlan}
-            onEditDetails={handleEditDetails}
-            onSubmit={handleSubmitQuote}
-            isSubmitting={isSubmitting}
-            submissionError={submissionError}
-          />
+          <div className="py-12">
+            <ReviewStep
+              selectedPlan={selectedPlan}
+              quantity={quantity}
+              addonIds={addonIds}
+              customer={customer}
+              monthlyTotal={monthlyTotal}
+              onEditCover={handleChangePlan}
+              onEditDetails={handleEditDetails}
+              onSubmit={handleSubmitQuote}
+              isSubmitting={isSubmitting}
+              submissionError={submissionError}
+            />
+          </div>
         )}
 
         {currentStep === 'success' && selectedPlan && successReference && (
-          <SuccessScreen
-            reference={successReference}
-            selectedPlan={selectedPlan}
-            quantity={quantity}
-            monthlyTotal={monthlyTotal}
-            customerName={customer.name}
-            onStartNewQuote={handleStartNewQuote}
-          />
+          <div className="py-12">
+            <SuccessScreen
+              reference={successReference}
+              selectedPlan={selectedPlan}
+              quantity={quantity}
+              monthlyTotal={monthlyTotal}
+              customerName={customer.name}
+              onStartNewQuote={handleStartNewQuote}
+            />
+          </div>
         )}
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
